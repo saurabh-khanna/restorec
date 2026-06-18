@@ -1,10 +1,6 @@
 # =============================================================================
-#  app_carolin.py  -  Conversational Study 2
-#
 #  "Understanding consumer trust in conversational recommender systems:
 #   The role of framing and consumption motivation"
-#  (van Berlo, Ischen, Wang & Busljeta Banks - Journal of Interactive
-#   Advertising, R&R)
 # =============================================================================
 #
 #  WHAT THIS APP IMPLEMENTS
@@ -80,7 +76,7 @@
 #       (Use a key valid for API_BASE_URL below, or temporarily switch
 #       API_BASE_URL to https://api.openai.com/v1 with a personal key.)
 #    2. pip install -r requirements.txt
-#    3. streamlit run app_carolin.py
+#    3. streamlit run app.py
 #    4. Test each passcode (AMBER / CORAL / OLIVE / SLATE) in a fresh tab and
 #       confirm that:
 #         - the SAME three restaurants (Sirocco's Table, The Organic Boho,
