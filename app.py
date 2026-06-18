@@ -5,14 +5,13 @@
 #
 #  WHAT THIS APP IMPLEMENTS
 #  ------------------------
-#  A fully conversational version of the paper's 2 x 2 between-subjects
+#  A conversational version of a 2 x 2 between-subjects
 #  design, built on surveychat (https://github.com/surveychat/surveychat).
 #  Participants interact with a live restaurant recommender instead of
-#  viewing static screenshots - the "more ecologically valid conversational
-#  interaction" requested by the editor.
+#  viewing static screenshots.
 #
 #  Factor 1 - MESSAGE FRAMING, manipulated in the system prompt and in the
-#             bot's scripted opening message (mirrors Study 1's opening line):
+#             bot's scripted opening message:
 #      EXPERT      recommendations attributed to food critics & nutritionists
 #      BANDWAGON   recommendations attributed to user ratings & reviews
 #
@@ -21,19 +20,17 @@
 #      UTILITARIAN  "affordable, quick, healthy, and filling meals"
 #      HEDONIC      "tasty food and cozy, relaxing atmosphere"
 #
-#  RECOMMENDATION CONTENT IS FIXED (Study 1 fidelity)  <-- KEY DESIGN CHOICE
+#  RECOMMENDATION CONTENT IS FIXED (Study 1 fidelity)
 #  ------------------------------------------------------------------------
 #  As in Study 1, the recommended restaurants are held CONSTANT across all
 #  four arms so that only the source FRAMING (and the motivation scenario)
 #  varies. The bot always recommends the SAME three restaurants, in the same
-#  order, with the same descriptions, taken verbatim from the Study 1
-#  stimulus (Figure 1):
+#  order, with the same descriptions:
 #      1. Sirocco's Table   2. The Organic Boho   3. Shiso Fine
 #  Only the introductory SOURCE line differs between framing arms
 #  ("recommended by food critics and nutritionists" vs. "most popular based
 #  on user ratings and reviews"). This isolates the framing manipulation
-#  from recommendation content - the same logic Study 1 used with its fixed
-#  screenshot. Ecological validity comes from the interaction being LIVE
+#  from recommendation content. Ecological validity comes from the interaction being LIVE
 #  (the participant types freely, can ask follow-ups, the framing recurs
 #  across turns), not from personalizing which restaurants are shown.
 #
@@ -91,8 +88,7 @@
 #  The engine below the configuration block (session handling, passcode
 #  routing, streaming chat, transcript export with the message-exclusion
 #  option) is unchanged from surveychat's app.py, except for ONE addition:
-#  a per-condition scenario banner rendered above the chat (search for
-#  "STUDY 2 CHANGE"). See app.py in the repo for full option documentation.
+#  a per-condition scenario banner rendered above the chat.
 # =============================================================================
 
 
@@ -150,19 +146,7 @@ _ROLE = "You are a conversational restaurant recommender system."
 #
 #  Each framing block carries (a) the source identity, (b) the EXACT
 #  introductory line to use when presenting the three restaurants, and (c) a
-#  guardrail forbidding the opposite source. The introductory lines are taken
-#  from the Study 1 stimulus (manuscript p. 12 / Figure 1).
-#
-#  >>> DECISION FOR THE TEAM: the two lead-in lines are NOT perfectly
-#  >>> parallel ("recommended by ..." vs. "most popular based on ..."),
-#  >>> because that is exactly how Study 1 worded them. If you would rather
-#  >>> remove the verb/structure difference as a potential confound, use a
-#  >>> parallel pair in BOTH studies, e.g.
-#  >>>   expert:    "These restaurants are recommended based on **expert
-#  >>>               reviews by food critics and nutritionists**:"
-#  >>>   bandwagon: "These restaurants are recommended based on **user
-#  >>>               ratings and reviews**:"
-#  >>> Lock whichever wording the team treats as canonical before fielding.
+#  guardrail forbidding the opposite source.
 
 _EXPERT_FRAMING = """SOURCE FRAMING (EXPERT) - where your recommendations come from:
 - Your restaurant recommendations come from professional food critics and certified nutritionists.
@@ -184,16 +168,6 @@ _BANDWAGON_FRAMING = """SOURCE FRAMING (BANDWAGON) - where your recommendations 
 #  the same three restaurants Study 1 showed in every condition; only the
 #  source line above them changed. Holding them constant is what isolates the
 #  framing manipulation from recommendation content.
-#
-#  >>> KNOWN CARRY-OVER ISSUE (decide as a team): Sirocco's Table is described
-#  >>> as "a popular restaurant ...". The word "popular" is a mild bandwagon
-#  >>> cue, so it slightly undercuts the EXPERT frame. This wording is
-#  >>> reproduced verbatim from Study 1 (where the descriptions were constant
-#  >>> across arms, so "popular" appeared in the expert condition too), so it
-#  >>> is faithful to Study 1 as written. If you want to neutralize it,
-#  >>> change "a popular restaurant" -> e.g. "a well-regarded restaurant" in
-#  >>> BOTH studies to keep Study 1 <-> Study 2 comparability. Do NOT change
-#  >>> it in only one place.
 
 _FIXED_RESTAURANTS = """THE THREE RESTAURANTS YOU RECOMMEND - always exactly these three, in this order, with these exact descriptions. Do not add, drop, replace, reorder, personalize, or reword them:
 1. **Sirocco's Table** - a popular restaurant specializing in traditional Mediterranean cuisine, with a focus on fresh, seasonal ingredients.
@@ -247,13 +221,8 @@ _OPENING_BANDWAGON = (
 
 # --- Consumption-motivation scenarios (per-condition banner, HTML) -----------
 #
-#  The quoted key phrases are verbatim from the manuscript (p. 11). The
+#  The quoted key phrases are verbatim from the manuscript. The
 #  surrounding sentences are placeholders.
-#
-#  >>> TODO for the team: replace the surrounding sentences with the EXACT
-#  >>> full scenario text used in Study 1, so the motivation manipulation is
-#  >>> identical across studies. Key terms are bolded, consistent with the
-#  >>> revised Study 1 stimuli.
 
 _SCENARIO_UTILITARIAN = (
     "<strong>Imagine the following situation:</strong> It is a busy week and "
@@ -274,9 +243,9 @@ _SCENARIO_HEDONIC = (
 
 # -- The four conditions (2 framing x 2 motivation) ----------------------------
 #
-#  Note that the system prompt is identical across motivation levels:
+#  The system prompt is identical across motivation levels:
 #  motivation is manipulated ONLY via the scenario banner (the bot is blind
-#  to the participant's assigned motivation, exactly as in Study 1 where the
+#  to the participant's assigned motivation, same as in Study 1 where the
 #  screenshot did not depend on the scenario).
 
 CONDITIONS = [
