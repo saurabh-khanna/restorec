@@ -1,11 +1,14 @@
 # =============================================================================
 #  "Understanding consumer trust in conversational recommender systems:
-#   The role of framing and consumption motivation"
+#   The role of framing and consumption motivation"  -  Conversational Study 2
 # =============================================================================
 #
+#  WHAT THIS APP IMPLEMENTS
+#  ------------------------
 #  A conversational version of a 2 x 2 between-subjects design, built on
 #  surveychat (https://github.com/surveychat/surveychat). Participants have a
-#  realistic conversation with a live restaurant recommender here.
+#  real, free-flowing conversation with a live restaurant recommender instead
+#  of viewing a static screenshot.
 #
 #  Factor 1 - MESSAGE FRAMING, manipulated in the system prompt and in the
 #             bot's scripted opening message:
@@ -17,11 +20,11 @@
 #      UTILITARIAN  "affordable, quick, healthy, and filling meals"
 #      HEDONIC      "tasty food and cozy, relaxing atmosphere"
 #
-#  WHAT IS FIXED, AND WHAT IS FREE
+#  WHAT IS FIXED, AND WHAT IS FREE  (per the coauthors)
 #  ----------------------------------------------------
 #  The conversation is meant to feel as realistic as possible. The bot may say
 #  sensible, even hypothetical, things (e.g. that The Organic Boho has vegan
-#  options) as long as it stays consistent within a single conversation.
+#  options) AS LONG AS it stays consistent within a single conversation.
 #  The ONE thing held constant across participants is the IDENTITY of the three
 #  recommended restaurants:
 #      1. Sirocco's Table   2. The Organic Boho   3. Shiso Fine
@@ -229,17 +232,19 @@ _OPENING_BANDWAGON = (
 
 _SCENARIO_UTILITARIAN = (
     "<strong>Imagine the following situation:</strong> It is a busy week and "
-    "you need to find a place to eat between tasks. You are looking "
+    "you need to find a place to eat between appointments. You are looking "
     "for a restaurant known for its <strong>affordable, quick, healthy, and "
-    "filling meals</strong>. Chat with the recommender below to find a restaurant "
-    "that fits this situation. When you are finished, click and confirm <strong>End chat</strong>."
+    "filling meals</strong>.<br><br>"
+    "Chat with the recommender below to find a restaurant that fits this "
+    "situation. When you are finished, click <strong>End chat</strong>."
 )
 _SCENARIO_HEDONIC = (
     "<strong>Imagine the following situation:</strong> You want to treat "
     "yourself to a pleasant evening out. You are looking for a restaurant "
-    "known for its <strong>tasty food and cozy, relaxing atmosphere</strong>. "
+    "known for its <strong>tasty food and cozy, relaxing atmosphere</strong>."
+    "<br><br>"
     "Chat with the recommender below to find a restaurant that fits this "
-    "situation. When you are finished, click and confirm <strong>End chat</strong>."
+    "situation. When you are finished, click <strong>End chat</strong>."
 )
 
 # -- The four conditions (2 framing x 2 motivation) ----------------------------
@@ -747,17 +752,25 @@ if not st.session_state["passcode_accepted"]:
         f'{PASSCODE_ENTRY_PROMPT}</p>',
         unsafe_allow_html=True,
     )
-    with st.form("key_form"):
-        _code = st.text_input("Passcode", placeholder="Enter your passcode")
-        _submitted = st.form_submit_button("Start →", type="primary")
-    if _submitted:
-        _idx = _passcode_map.get(_code.strip().lower())
-        if _idx is not None:
-            st.session_state["condition_index"] = _idx
-            st.session_state["passcode_accepted"] = True
-            st.rerun()
-        else:
-            st.error("Code not recognised. Please check and try again.")
+    # A plain text input + button instead of st.form: while a form's elements
+    # stream in during initial load behind an iframe/proxy (Qualtrics -> Appliku),
+    # Streamlit briefly sees the form without its submit button and flashes a
+    # transient "Missing Submit Button" error that clears once the button renders.
+    # A bare input + button skips the form submit-button check entirely, so the
+    # flash cannot occur. A valid code advances on Enter (the input commits its
+    # value) or via the button; the button also reports an empty/unrecognised code.
+    _code = st.text_input("Passcode", placeholder="Enter your passcode")
+    _go = st.button("Start →", type="primary")
+    _idx = _passcode_map.get(_code.strip().lower()) if _code.strip() else None
+    if _idx is not None:
+        st.session_state["condition_index"] = _idx
+        st.session_state["passcode_accepted"] = True
+        st.rerun()
+    elif _go:
+        st.error(
+            "Code not recognised. Please check and try again."
+            if _code.strip() else "Please enter your passcode."
+        )
     st.stop()
 
 # Passcode accepted (or not required) - condition is now resolved.
@@ -959,7 +972,7 @@ else:
           }}
         </style>
         <button id="copy-btn">
-          &#10003;&nbsp; Copy your conversation transcript
+          &#10003;&nbsp; Click here to copy your conversation transcript
         </button>
         <div id="fallback">
           <p>Automatic copy failed. Select all and copy manually:</p>
@@ -973,7 +986,7 @@ else:
           var text = {_js_str};
           btn.addEventListener('click', function() {{
             function onSuccess() {{
-              btn.textContent = '\u2713 Copied! Paste it in the below question to proceed.';
+              btn.textContent = '\u2713 Copied! Paste it in the question below to proceed.';
               btn.disabled = true;
             }}
             function onFail() {{
@@ -1001,6 +1014,25 @@ else:
         </script>
         """,
         unsafe_allow_javascript=True,
+    )
+
+    # Down-arrow hint pointing past the bottom of the Streamlit iframe toward
+    # the JSON entry question that sits below it in Qualtrics. Rendered in the
+    # main app DOM (not inside the copy component) so it anchors to the very
+    # bottom of the embedded app.
+    st.markdown(
+        """
+        <style>
+          @keyframes pasteArrowBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(7px); } }
+          .paste-hint { text-align: center; margin-top: 14px; color: #5C6C79; font-size: 0.9rem; font-weight: 500; }
+          .paste-hint .arrow { display: block; font-size: 1.7rem; line-height: 1.1; margin-top: 2px; animation: pasteArrowBounce 1.2s ease-in-out infinite; }
+        </style>
+        <div class="paste-hint">
+          Paste it in the question below
+          <span class="arrow">&#8595;</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
 
 
