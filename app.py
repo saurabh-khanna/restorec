@@ -232,14 +232,14 @@ _SCENARIO_UTILITARIAN = (
     "you need to find a place to eat between tasks. You are looking "
     "for a restaurant known for its <strong>affordable, quick, healthy, and "
     "filling meals</strong>. Chat with the recommender below to find a restaurant "
-    "that fits this situation. When you are finished, click and confirm<strong>End chat</strong>."
+    "that fits this situation. When you are finished, click and confirm <strong>End chat</strong>."
 )
 _SCENARIO_HEDONIC = (
     "<strong>Imagine the following situation:</strong> You want to treat "
     "yourself to a pleasant evening out. You are looking for a restaurant "
     "known for its <strong>tasty food and cozy, relaxing atmosphere</strong>. "
     "Chat with the recommender below to find a restaurant that fits this "
-    "situation. When you are finished, click and confirm<strong>End chat</strong>."
+    "situation. When you are finished, click and confirm <strong>End chat</strong>."
 )
 
 # -- The four conditions (2 framing x 2 motivation) ----------------------------
