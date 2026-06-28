@@ -1,6 +1,6 @@
-# Conversational Restaurant Recommender — Trust Study
+# Conversational Restaurant Recommender: Trust Study
 
-> Built on [surveychat](https://github.com/surveychat/surveychat), an open-source platform for embedding LLM chatbots inside Qualtrics surveys. This repository specialises surveychat into a single fixed experiment — see [Relation to surveychat](#relation-to-surveychat) for what changed.
+> Built on [surveychat](https://github.com/surveychat/surveychat), an open-source platform for embedding LLM chatbots inside Qualtrics surveys. This repository specialises surveychat into a single fixed experiment. See [Relation to surveychat](#relation-to-surveychat) for what changed.
 
 A conversational version of a 2 × 2 between-subjects experiment on consumer trust in conversational recommender systems (*"Understanding consumer trust in conversational recommender systems: the role of framing and consumption motivation"*, Conversational Study 2). Participants have a live, free-flowing chat with a restaurant recommender rather than viewing a static screenshot, then paste the transcript back into Qualtrics.
 
@@ -8,10 +8,10 @@ A conversational version of a 2 × 2 between-subjects experiment on consumer tru
 
 Two factors, fully crossed into four arms:
 
-- **Message framing** — manipulated in the system prompt and the bot's opening line:
+- **Message framing**, manipulated in the system prompt and the bot's opening line:
   - **Expert**: recommendations attributed to food critics & nutritionists
   - **Bandwagon**: recommendations attributed to user ratings & reviews
-- **Consumption motivation** — manipulated in a scenario banner above the chat (the bot is blind to this):
+- **Consumption motivation**, manipulated in a scenario banner above the chat (the bot is blind to this):
   - **Utilitarian**: "affordable, quick, healthy, and filling meals"
   - **Hedonic**: "tasty food and cozy, relaxing atmosphere"
 
@@ -24,7 +24,7 @@ Each arm is reached with its own passcode:
 | `OLIVE` | Bandwagon | Utilitarian |
 | `SLATE` | Bandwagon | Hedonic |
 
-Held constant across every arm: the bot recommends the same three restaurants — **Sirocco's Table**, **The Organic Boho**, **Shiso Fine** — and never names any other. Only the recommendation *source* (the framing) differs systematically between arms. The bot may add plausible per-conversation detail as long as it stays internally consistent.
+Held constant across every arm: the bot recommends the same three restaurants (**Sirocco's Table**, **The Organic Boho**, **Shiso Fine**) and never names any other. Only the recommendation *source* (the framing) differs systematically between arms. The bot may add plausible per-conversation detail as long as it stays internally consistent.
 
 ## Setup
 
@@ -60,9 +60,9 @@ The app must be served over HTTPS to embed in Qualtrics.
 
 | Option | How |
 |---|---|
-| **Streamlit Cloud** (recommended) | Push to GitHub → [share.streamlit.io](https://share.streamlit.io) → add `OPENAI_API_KEY` under Advanced settings → Secrets → Deploy |
+| **Streamlit Cloud** (easy to test) | Push to GitHub → [share.streamlit.io](https://share.streamlit.io) → add `OPENAI_API_KEY` under Advanced settings → Secrets → Deploy |
 | **Docker** | `docker compose up --build` (reads your `.env`) |
-| **Cloud server** | `streamlit run app.py --server.port 80 --server.headless true` |
+| **Any cloud server** | `streamlit run app.py --server.port 80 --server.headless true` |
 
 ## Qualtrics integration
 
@@ -78,7 +78,7 @@ The app must be served over HTTPS to embed in Qualtrics.
    ```
 
 3. Add a **Text Entry** question right after for the participant to paste the transcript.
-4. Recover condition assignment from the embedded-data passcode at analysis time — never from the transcript, which excludes condition info.
+4. Recover condition assignment from the embedded-data passcode at analysis time, not from the transcript (which excludes condition info).
 
 ## Transcript format
 
@@ -110,7 +110,7 @@ Worked templates: [Python/pandas notebook](analysis/python_pandas_qualtrics_json
 
 ## Relation to surveychat
 
-This repo is a fork of [surveychat](https://github.com/surveychat/surveychat) specialised into one experiment. The chat engine — session handling, passcode routing, streaming chat, transcript export — is surveychat's. The study-specific additions are a per-condition scenario banner, turn-aware pacing of the recommendation, a soft turn cap, a recommendation-gated End-chat button, and a single-container layout. Search for `STUDY 2 CHANGE` in `app.py` to find them.
+This repo is a fork of [surveychat](https://github.com/surveychat/surveychat) specialised into one experiment. The chat engine (session handling, passcode routing, streaming chat, transcript export) is surveychat's. The study-specific additions are a per-condition scenario banner, turn-aware pacing of the recommendation, a soft turn cap, a recommendation-gated End-chat button, and a single-container layout. Search for `STUDY 2 CHANGE` in `app.py` to find them.
 
 ## Troubleshooting
 
