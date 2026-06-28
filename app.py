@@ -20,8 +20,8 @@
 #      UTILITARIAN  "affordable, quick, healthy, and filling meals"
 #      HEDONIC      "tasty food and cozy, relaxing atmosphere"
 #
-#  WHAT IS FIXED, AND WHAT IS FREE  (per the coauthors)
-#  ----------------------------------------------------
+#  WHAT IS FIXED, AND WHAT IS FREE
+#  -------------------------------
 #  The conversation is meant to feel as realistic as possible. The bot may say
 #  sensible, even hypothetical, things (e.g. that The Organic Boho has vegan
 #  options) AS LONG AS it stays consistent within a single conversation.
@@ -122,10 +122,10 @@ API_BASE_URL = "https://llmproxy.uva.nl/v1"
 #  gpt-4o is a natural choice for continuity with Study 1, whose stimuli
 #  mimicked the ChatGPT interface.
 #
-#  METHODS NOTE: if the proxy supports dated snapshots (e.g.
+#  REPRODUCIBILITY: if the proxy supports dated snapshots (e.g.
 #  "gpt-4o-2024-08-06"), pin one before data collection so the model cannot
-#  silently change mid-fieldwork - reviewers will ask. Record the exact model
-#  string and data-collection dates in the manuscript.
+#  silently change underneath a running study. Keep a record of the exact model
+#  string and the data-collection dates.
 MODEL = "gpt-4o"
 
 # -- Design -----------------------------------------------------------------------
@@ -166,12 +166,10 @@ _BANDWAGON_FRAMING = """SOURCE FRAMING (BANDWAGON) - where your recommendations 
 # --- The three recommended restaurants (IDENTITY fixed across all arms) ------
 #
 #  Only the NAMES are held constant across participants and arms. The short
-#  descriptions are a seed the bot may elaborate on (see _COMMON_RULES). Based
-#  on the Study 1 stimulus (Figure 1); note the word "popular" has been dropped
-#  from Sirocco's description so it does not leak a bandwagon cue into the
-#  expert arm (the earlier carry-over issue). Because descriptions are no longer
-#  required to be verbatim, this is consistent with the team's decision that
-#  only restaurant identity is fixed.
+#  descriptions are a seed the bot may elaborate on (see _COMMON_RULES). Note
+#  that the word "popular" has been dropped from Sirocco's description so it does
+#  not leak a bandwagon cue into the expert arm. Descriptions are not required to
+#  be verbatim; only the restaurant identity is held fixed.
 
 _FIXED_RESTAURANTS = """THE THREE RESTAURANTS YOU RECOMMEND - you recommend these three, and ONLY these three. Their names (identity) are fixed and must never change or be substituted:
 1. **Sirocco's Table** - traditional Mediterranean cuisine with a focus on fresh, seasonal ingredients.
@@ -222,13 +220,11 @@ _OPENING_BANDWAGON = (
 
 # --- Consumption-motivation scenarios (per-condition banner, HTML) -----------
 #
-#  The quoted key phrases are verbatim from the manuscript. The surrounding
-#  sentences are placeholders.
+#  The bolded key phrases are the motivation manipulation and must be kept
+#  exactly; the surrounding sentences are placeholders.
 #
-#  >>> TODO for the team: replace the surrounding sentences with the EXACT full
-#  >>> scenario text used in Study 1, so the motivation manipulation is identical
-#  >>> across studies. Key terms are bolded, consistent with the revised Study 1
-#  >>> stimuli.
+#  >>> TODO: replace the surrounding sentences with the final scenario wording
+#  >>> before data collection, keeping the bolded key terms unchanged.
 
 _SCENARIO_UTILITARIAN = (
     "<strong>Imagine the following situation:</strong> It is a busy week and "
@@ -291,12 +287,11 @@ CONDITIONS = [
 
 # -- Model parameters ------------------------------------------------------------
 #
-#  Per the team's request, model parameters are left at INDUSTRY-STANDARD
-#  DEFAULTS: temperature and max_tokens are not overridden (the model uses its
-#  own defaults), which keeps the conversation natural. Reply length is governed
-#  by the conversation rules rather than a hard token cap. Record the model and
-#  these defaults in the manuscript's method section.
-TEMPERATURE = None   # model default (industry standard; ~1.0 for gpt-4o)
+#  Model parameters are left at their provider defaults: temperature and
+#  max_tokens are not overridden, which keeps the conversation natural. Reply
+#  length is governed by the conversation rules rather than a hard token cap.
+#  Keep a record of the model and these settings alongside the study materials.
+TEMPERATURE = None   # model default (~1.0 for gpt-4o)
 MAX_TOKENS  = None   # no explicit cap; brevity is handled via the conversation rules
 
 # -- Conversation pacing ---------------------------------------------------------
@@ -327,7 +322,7 @@ STUDY_TITLE = "Restaurant Recommender"
 #  provides them), and the post-gate banner is per-condition via "scenario".
 WELCOME_MESSAGE = ""
 
-PASSCODE_ENTRY_PROMPT = "Enter the code shown in the survey to start the conversation."
+PASSCODE_ENTRY_PROMPT = "Please enter your passcode to start the conversation."
 
 # -- Layout ----------------------------------------------------------------------
 #
@@ -354,19 +349,13 @@ END_CHAT_BUTTON_BELOW = True
 
 def validate_passcode_routing(conditions: list, n_conditions: int) -> None:
     """
-    Check passcode-routing configuration and halt the app on any inconsistency.
+    Sanity-check the passcode setup and stop the app with a visible error if
+    anything is off, so a misconfiguration surfaces here instead of halfway
+    through data collection.
 
-    Enforces three invariants:
-      1. In experiment mode (n_conditions > 1), every active condition must
-         define a "passcode" field.  Partial configuration (some but not
-         all conditions have a passcode) is also rejected in any mode.
-      2. Every passcode value must be a non-empty string after stripping
-         leading and trailing whitespace.
-      3. All passcodes must be unique when compared case-insensitively.
-
-    Any violation triggers a descriptive on-screen error via st.error() and
-    stops execution with st.stop(), so researchers see the problem
-    immediately rather than discovering it mid-study.
+    The rules: in experiment mode every active condition needs a passcode (all
+    or nothing - a partial setup is always wrong), none may be blank, and no two
+    may collide once case is ignored.
     """
     active    = conditions[:n_conditions]
     passcoded = [c for c in active if "passcode" in c]
@@ -410,17 +399,12 @@ def validate_passcode_routing(conditions: list, n_conditions: int) -> None:
 
 def build_api_messages(conversation: list, system_prompt: str) -> list:
     """
-    Construct the message list to send to the LLM API for a single turn.
+    Build the message list for one API call: the system prompt first, then the
+    conversation so far. Participants never see the system text; by this point
+    the caller has already folded the current pacing directive into it.
 
-    The system prompt is inserted as a {"role": "system"} message at position 0.
-    Participants never see this text. For this study the caller appends a short
-    turn-aware pacing directive to the system prompt (see pacing_directive),
-    so the single system message carries both the persona and the current
-    pacing instruction.
-
-    Only "role" and "content" are forwarded from the conversation history.
-    The "timestamp" key is local-only metadata that the chat completions API
-    does not accept and would cause a validation error if included.
+    We forward only role and content - the timestamp we keep on each message is
+    local bookkeeping and the chat completions endpoint would reject it.
     """
     messages = [{"role": "system", "content": system_prompt}]
     for m in conversation:
@@ -428,17 +412,38 @@ def build_api_messages(conversation: list, system_prompt: str) -> list:
     return messages
 
 
-def pacing_directive(user_turns: int, min_before: int, rec_by: int, max_turns: int) -> str:
+def pacing_directive(
+    user_turns: int, min_before: int, rec_by: int, max_turns: int, recs_made: bool
+) -> str:
     """
-    Return a short instruction that controls WHEN the bot may present its three
-    recommendations, based on how many messages the participant has sent.
+    Pick the pacing instruction we append to the system prompt for the next
+    reply. It turns on two things: how many messages the participant has sent,
+    and whether the three recommendations have already gone out (recs_made).
 
-    Stages:
-      - before `min_before`         : hold the recommendations, keep exploring.
-      - up to `rec_by`              : may present once preferences are clear.
-      - up to `max_turns`           : present now if not already done.
-      - at/after `max_turns`        : final wrap-up + ask to click End chat.
+    Early on the bot holds the recommendations back and keeps drawing out
+    preferences; once it knows enough it presents all three; after that it
+    answers follow-ups but gently steers toward wrapping up; and the final turn
+    is a hard close. That wind-down is deliberately in step with the "End chat"
+    button, which only appears once the recommendation has been made.
     """
+    if user_turns >= max_turns:
+        return (
+            "CONVERSATION PACING: This is the FINAL message of the conversation. Give a "
+            "brief, friendly wrap-up (2-4 sentences). If you have NOT already presented "
+            "your three restaurant recommendations, include all three now using your "
+            "source lead-in line. Then tell the participant the conversation is complete "
+            "and ask them to click the \"End chat\" button below to finish. Do not ask "
+            "any further questions."
+        )
+    if recs_made:
+        return (
+            "CONVERSATION PACING: You have already presented your three restaurant "
+            "recommendations. Keep replies short and helpful: answer any remaining "
+            "questions the participant has, but gently steer the conversation toward a "
+            "close rather than prolonging it or raising new topics. Once their questions "
+            "are addressed, note that they seem all set and let them know they can click "
+            "the \"End chat\" button below whenever they are ready."
+        )
     if user_turns < min_before:
         return (
             "CONVERSATION PACING: It is still early (the participant has sent "
@@ -454,40 +459,50 @@ def pacing_directive(user_turns: int, min_before: int, rec_by: int, max_turns: i
             "recommendations. Once the participant has given you a reasonable sense "
             "of what they want, present all three in your reply using your source "
             "lead-in line. You can keep chatting and answer related questions, but "
-            "gently steer toward giving (or following up on) the recommendation - "
-            "do not delay it unnecessarily."
-        )
-    if user_turns < max_turns:
-        return (
-            "CONVERSATION PACING: The conversation is getting long. If you have NOT "
-            "already presented your three restaurant recommendations, present all "
-            "three now using your source lead-in line. If you already have, continue "
-            "with brief, helpful follow-up."
+            "gently steer toward giving the recommendation - do not delay it "
+            "unnecessarily."
         )
     return (
-        "CONVERSATION PACING: This is the FINAL message of the conversation. Give a "
-        "brief, friendly wrap-up (2-4 sentences). If you have NOT already presented "
-        "your three restaurant recommendations, include all three now using your "
-        "source lead-in line. Then tell the participant the conversation is complete "
-        "and ask them to click the \"End chat\" button below to finish. Do not ask "
-        "any further questions."
+        "CONVERSATION PACING: The conversation is getting long and you have NOT yet "
+        "presented your three restaurant recommendations. Present all three now using "
+        "your source lead-in line."
     )
+
+
+# STUDY 2 CHANGE. One distinctive lowercase fragment per restaurant. We match on
+# a fragment rather than the full name so a curly apostrophe or a slight
+# rewording in the model's output doesn't make us miss the recommendation.
+_RESTAURANT_MARKERS = ("sirocco", "organic boho", "shiso")
+
+
+def recommendation_made(messages: list) -> bool:
+    """
+    Has the bot actually put all three restaurants in front of the participant?
+    True once a single assistant message names all three (case-insensitive, on
+    the fragments above). The opening greeting only states the source, not the
+    restaurants, so it won't trip this, and we ignore participant messages.
+
+    This is what gates the "End chat" button and flips the pacing into its
+    wind-down stage.
+    """
+    for m in messages:
+        if m.get("role") != "assistant":
+            continue
+        text = m.get("content", "").lower()
+        if all(marker in text for marker in _RESTAURANT_MARKERS):
+            return True
+    return False
 
 
 def build_transcript(messages: list) -> dict:
     """
-    Format the conversation history as the transcript object shown after chat ends.
+    Turn the conversation into the JSON object the participant copies back into
+    Qualtrics: a "messages" list of {role, content, timestamp}, with "user"
+    relabelled to "participant".
 
-    Returns a JSON-serialisable dict with a single "messages" key.  Each entry
-    carries:
-      - "role"      : "participant" (relabelled from "user") or "assistant"
-      - "content"   : the full text of the message
-      - "timestamp" : UTC ISO-8601 string
-
-    Condition name and model are intentionally excluded: in experiment mode,
-    participants must not be able to infer their assigned condition from the
-    transcript they read and manually copy back into the survey.  Treatment
-    assignment is recovered from the passcode stored in the survey platform.
+    Note what we leave out - condition name and model. The participant reads this
+    transcript, so it must not give away which arm they were in; we recover that
+    from the passcode on the survey side instead.
     """
     entries = []
     for m in messages:
@@ -501,12 +516,11 @@ def build_transcript(messages: list) -> dict:
 
 def mask_unshared_messages(messages: list, unshared_indices: set[int]) -> list:
     """
-    Redact participant-selected messages before transcript export.
+    Redact the messages a participant chose not to share before we export.
 
-    If a participant hides one of their own messages, also hide the immediately
-    following assistant reply. Assistant replies often quote, summarize, or
-    directly answer the previous participant turn, so leaving them visible could
-    accidentally reveal the message the participant chose not to share.
+    When a participant hides one of their own messages we also hide the assistant
+    reply right after it, since that reply usually quotes or answers the hidden
+    message and would otherwise leak it straight back.
     """
     hidden_assistant_indices = set()
     for idx in unshared_indices:
@@ -620,9 +634,6 @@ if "confirm_end" not in st.session_state:
 if "limit_reached" not in st.session_state:
     st.session_state["limit_reached"] = False
 
-if "has_sent_message" not in st.session_state:
-    st.session_state["has_sent_message"] = False
-
 if "messages" not in st.session_state:
     st.session_state["messages"] = []
 
@@ -631,14 +642,11 @@ if "messages" not in st.session_state:
 @st.cache_resource
 def get_client(api_key: str, base_url: str) -> OpenAI:
     """
-    Create and cache a singleton LLM client.
-
-    @st.cache_resource creates the object once, shares it across all reruns and
-    browser sessions on the same server, and never serialises it to disk.
+    Build the OpenAI client once and reuse it. @st.cache_resource keeps a single
+    instance across reruns and across sessions on this server.
     """
-    # Explicitly set Authorization in default_headers in addition to passing
-    # api_key.  Some versions of the openai SDK do not forward the auth header
-    # reliably when base_url points to a non-OpenAI endpoint (e.g. proxies).
+    # Some openai SDK versions don't reliably send the auth header when base_url
+    # points at a non-OpenAI endpoint (our UvA proxy), so we also set it by hand.
     return OpenAI(
         api_key=api_key,
         base_url=base_url,
@@ -652,21 +660,24 @@ client = get_client(OPENAI_API_KEY, API_BASE_URL)
 
 def generate_reply(active_condition: dict):
     """
-    Stream the assistant's reply to the latest participant message and store it.
+    Stream the assistant's reply to the latest participant message, draw it in
+    its own bubble, and store it. The bubble opens at the current render spot, so
+    placement is just a matter of calling this inside the container you want.
 
-    Opens its own assistant chat bubble at the CURRENT render location, so the
-    caller controls placement simply by calling this inside the desired
-    container. On success the reply is appended to st.session_state["messages"];
-    on failure the unanswered participant message is dropped and an error is
-    shown. Applies the soft turn cap (sets limit_reached when MAX_EXCHANGES is
-    reached). Relies on module-level `client` and the pacing constants. Returns
-    (response_text_or_None, participant_turn_count).
+    On success the reply is appended to the history; on failure we drop the
+    unanswered participant message and show an error. This is also where the soft
+    turn cap trips (limit_reached, once the participant hits MAX_EXCHANGES).
+    Returns the reply text (or None on failure) and the participant turn count.
     """
     user_turns = sum(
         1 for m in st.session_state["messages"] if m["role"] == "user"
     )
+    # The reply we're about to generate isn't in the history yet, so this tells
+    # us whether the recommendation already went out on an EARLIER turn - which is
+    # exactly what the pacing needs to decide: hold, present, or wind down.
+    recs_made = recommendation_made(st.session_state["messages"])
     pacing = pacing_directive(
-        user_turns, MIN_TURNS_BEFORE_RECS, RECOMMEND_BY_TURN, MAX_EXCHANGES
+        user_turns, MIN_TURNS_BEFORE_RECS, RECOMMEND_BY_TURN, MAX_EXCHANGES, recs_made
     )
     system_content = active_condition["system_prompt"] + "\n\n" + pacing
     api_messages = build_api_messages(st.session_state["messages"], system_content)
@@ -758,19 +769,23 @@ if not st.session_state["passcode_accepted"]:
     # transient "Missing Submit Button" error that clears once the button renders.
     # A bare input + button skips the form submit-button check entirely, so the
     # flash cannot occur. A valid code advances on Enter (the input commits its
-    # value) or via the button; the button also reports an empty/unrecognised code.
-    _code = st.text_input("Passcode", placeholder="Enter your passcode")
-    _go = st.button("Start →", type="primary")
-    _idx = _passcode_map.get(_code.strip().lower()) if _code.strip() else None
+    # value) or via the button.
+    _code = st.text_input("Passcode", placeholder="Enter your passcode here", label_visibility="collapsed")
+    _go = st.button("Start the conversation →", type="primary", width="content")
+    _code_clean = _code.strip()
+    _idx = _passcode_map.get(_code_clean.lower()) if _code_clean else None
     if _idx is not None:
         st.session_state["condition_index"] = _idx
         st.session_state["passcode_accepted"] = True
         st.rerun()
+    elif _code_clean:
+        # A non-empty code that didn't match. Show the error whether they pressed
+        # Enter (the input commits and reruns, so _go is False here) or clicked
+        # the button - keying this on _go alone would miss the Enter case.
+        st.error("Code not recognised. Please check and try again.")
     elif _go:
-        st.error(
-            "Code not recognised. Please check and try again."
-            if _code.strip() else "Please enter your passcode."
-        )
+        # Button clicked with an empty box.
+        st.error("Please enter your passcode.")
     st.stop()
 
 # Passcode accepted (or not required) - condition is now resolved.
@@ -836,7 +851,6 @@ if not st.session_state["chat_ended"]:
                         "content":   prompt,
                         "timestamp": datetime.now(timezone.utc).isoformat(),
                     })
-                    st.session_state["has_sent_message"] = True
                     # New bubbles go into the history area, above the input.
                     with msgs_area:
                         with st.chat_message("user"):
@@ -845,30 +859,42 @@ if not st.session_state["chat_ended"]:
                     if _resp and _ut >= MAX_EXCHANGES:
                         st.rerun()
 
-        # End-chat button, directly BELOW the whole chat component.
-        if st.session_state["has_sent_message"]:
+        # End-chat button, sitting just below the whole chat. We hold it back
+        # until the recommendation is actually on screen, so nobody ends before
+        # they've had one. limit_reached is the safety net: if we ever hit the
+        # turn cap without detecting a recommendation, we still have to let the
+        # participant out.
+        if (
+            recommendation_made(st.session_state["messages"])
+            or st.session_state["limit_reached"]
+        ):
             _end_col, _ = st.columns([2, 4])
             with _end_col:
                 if not st.session_state["confirm_end"]:
-                    if st.button("End chat", use_container_width=True, type="secondary"):
+                    if st.button("End chat", width="stretch", type="secondary"):
                         st.session_state["confirm_end"] = True
                         st.rerun()
                 else:
-                    if st.button("✓ Confirm end", use_container_width=True, type="primary"):
+                    if st.button("✓ Confirm ending this chat", width="stretch", type="primary"):
                         st.session_state["chat_ended"] = True
                         st.rerun()
 
     else:
         # ---- Fallback layout: top-right End button, default docked input -----
-        if st.session_state["has_sent_message"]:
+        # Same gating as the main layout above: the recommendation has to be on
+        # screen first, with limit_reached as the at-the-cap escape hatch.
+        if (
+            recommendation_made(st.session_state["messages"])
+            or st.session_state["limit_reached"]
+        ):
             _, _end_col = st.columns([4, 2])
             with _end_col:
                 if not st.session_state["confirm_end"]:
-                    if st.button("End chat", use_container_width=True, type="secondary"):
+                    if st.button("End chat", width="stretch", type="secondary"):
                         st.session_state["confirm_end"] = True
                         st.rerun()
                 else:
-                    if st.button("✓ Confirm end", use_container_width=True, type="primary"):
+                    if st.button("✓ Confirm ending this chat", width="stretch", type="primary"):
                         st.session_state["chat_ended"] = True
                         st.rerun()
 
@@ -896,14 +922,17 @@ if not st.session_state["chat_ended"]:
                     "content":   prompt,
                     "timestamp": datetime.now(timezone.utc).isoformat(),
                 })
-                st.session_state["has_sent_message"] = True
                 with st.chat_message("user"):
                     st.markdown(prompt)
+                _recs_before = recommendation_made(st.session_state["messages"])
                 _resp, _ut = generate_reply(condition)
-                if _resp and _ut >= MAX_EXCHANGES:
-                    st.rerun()
-                elif _ut == 1:
-                    # Reveal the top-right End button after the first exchange.
+                if _resp and (
+                    _ut >= MAX_EXCHANGES
+                    or (recommendation_made(st.session_state["messages"])
+                        and not _recs_before)
+                ):
+                    # Rerun to surface the top-right End button the moment the
+                    # recommendation has been presented (or at the turn cap).
                     st.rerun()
 
 # =============================================================================
@@ -970,24 +999,38 @@ else:
             width: 100%; height: 80px; font-size: 0.75rem;
             font-family: monospace; margin-top: 0.25rem;
           }}
+          @keyframes pasteArrowBounce {{ 0%, 100% {{ transform: translateY(0); }} 50% {{ transform: translateY(10px); }} }}
+          #paste-hint {{ display: none; text-align: center; margin-top: 18px; color: #5C6C79; font-size: 1.1rem; font-weight: 600; }}
+          #paste-hint .paste-how {{ display: block; margin-top: 6px; font-size: 0.92rem; font-weight: 400; }}
+          #paste-hint .arrow {{ display: block; font-size: 3rem; line-height: 1.1; margin-top: 4px; animation: pasteArrowBounce 1.2s ease-in-out infinite; }}
         </style>
         <button id="copy-btn">
           &#10003;&nbsp; Click here to copy your conversation transcript
         </button>
         <div id="fallback">
-          <p>Automatic copy failed. Select all and copy manually:</p>
+          <p>Automatic copy failed. Please select all and copy manually:</p>
           <textarea id="fallback-ta" readonly></textarea>
+        </div>
+        <div id="paste-hint">
+          Now paste it into the box below.
+          <span class="paste-how">
+            On a computer: Ctrl+V (Windows) or Cmd+V (Mac).<br>
+            On a phone or tablet: press and hold the box, then tap Paste.
+          </span>
+          <span class="arrow">&#8595;</span>
         </div>
         <script>
         (function() {{
           var btn = document.getElementById('copy-btn');
           var fb = document.getElementById('fallback');
           var ta = document.getElementById('fallback-ta');
+          var hint = document.getElementById('paste-hint');
           var text = {_js_str};
           btn.addEventListener('click', function() {{
             function onSuccess() {{
               btn.textContent = '\u2713 Copied! Paste it in the question below to proceed.';
               btn.disabled = true;
+              hint.style.display = 'block';
             }}
             function onFail() {{
               btn.style.display = 'none';
@@ -1016,28 +1059,9 @@ else:
         unsafe_allow_javascript=True,
     )
 
-    # Down-arrow hint pointing past the bottom of the Streamlit iframe toward
-    # the JSON entry question that sits below it in Qualtrics. Rendered in the
-    # main app DOM (not inside the copy component) so it anchors to the very
-    # bottom of the embedded app.
-    st.markdown(
-        """
-        <style>
-          @keyframes pasteArrowBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(7px); } }
-          .paste-hint { text-align: center; margin-top: 14px; color: #5C6C79; font-size: 0.9rem; font-weight: 500; }
-          .paste-hint .arrow { display: block; font-size: 1.7rem; line-height: 1.1; margin-top: 2px; animation: pasteArrowBounce 1.2s ease-in-out infinite; }
-        </style>
-        <div class="paste-hint">
-          Paste it in the question below
-          <span class="arrow">&#8595;</span>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
 
 # =============================================================================
-#  STUDY DATA HANDLING NOTES  (for the team - no effect on the running app)
+#  STUDY DATA HANDLING NOTES  (reference only - no effect on the running app)
 # =============================================================================
 #
 #  PASSCODE -> CONDITION MAPPING (this study)
@@ -1101,8 +1125,8 @@ else:
 #         message - both are controllable from the transcript turn order.
 #    Because the bot may add per-conversation detail (e.g. invented prices or
 #    dishes), do NOT expect verbatim descriptions; only identity is fixed.
-#    Report these fidelity descriptives in the manuscript - reviewers will ask
-#    how a generative manipulation was controlled.
+#    Report these fidelity descriptives alongside the results so it is clear how
+#    a generative manipulation was controlled.
 #
 #  OPTIONAL HARDENING (if you later want exact recommendation text)
 #  ----------------------------------------------------------------

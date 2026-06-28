@@ -32,7 +32,6 @@ _st_mock.session_state = {
     "condition_index":   0,
     "chat_ended":        False,
     "confirm_end":       False,
-    "has_sent_message":  False,
     "messages":          [],
 }
 _st_mock.cache_resource = lambda fn: fn   # no-op decorator
