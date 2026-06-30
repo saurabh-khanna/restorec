@@ -273,3 +273,55 @@ class TestMaskUnsharedMessages:
         app.mask_unshared_messages(messages, {0})
         assert messages[0]["content"] == "Private detail"
         assert messages[1]["content"] == "You said private detail."
+
+
+# ===========================================================================
+#  recommendation_made
+# ===========================================================================
+
+class TestRecommendationDetection:
+    """Tests for recommendation_made, which gates both the pacing wind-down and
+    the End-chat button (all three restaurants named together in one message)."""
+
+    OPENING   = "Hi! My recommendations come from food critics and nutritionists. What are you after?"
+    ALL_THREE = "I'd suggest Sirocco's Table, The Organic Boho, and Shiso Fine."
+    ONLY_ONE  = "For Asian, Shiso Fine is your best bet."
+
+    def _assistant(self, content):
+        return {"role": "assistant", "content": content, "timestamp": "t"}
+
+    def _user(self, content):
+        return {"role": "user", "content": content, "timestamp": "t"}
+
+    # --- recommendation_made: needs all three in one assistant message ------
+
+    def test_empty(self):
+        assert app.recommendation_made([]) is False
+
+    def test_opening_only_is_false(self):
+        assert app.recommendation_made([self._assistant(self.OPENING)]) is False
+
+    def test_all_three_in_one_message_is_true(self):
+        assert app.recommendation_made([self._assistant(self.ALL_THREE)]) is True
+
+    def test_case_insensitive(self):
+        assert app.recommendation_made([self._assistant(self.ALL_THREE.upper())]) is True
+
+    def test_only_one_restaurant_is_false(self):
+        assert app.recommendation_made([self._assistant(self.ONLY_ONE)]) is False
+
+    def test_split_across_messages_is_false(self):
+        msgs = [
+            self._assistant("Sirocco's Table is lovely."),
+            self._user("anything else?"),
+            self._assistant("Also The Organic Boho and Shiso Fine."),
+        ]
+        assert app.recommendation_made(msgs) is False
+
+    def test_ignores_participant_messages(self):
+        assert app.recommendation_made([self._user(self.ALL_THREE)]) is False
+
+    def test_one_restaurant_does_not_show_button(self):
+        # A single recommended restaurant must NOT count: the button only appears
+        # once all three are presented together in one message.
+        assert app.recommendation_made([self._assistant(self.ONLY_ONE)]) is False
