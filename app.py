@@ -126,7 +126,7 @@ API_BASE_URL = "https://llmproxy.uva.nl/v1"
 #  "gpt-4o-2024-08-06"), pin one before data collection so the model cannot
 #  silently change underneath a running study. Keep a record of the exact model
 #  string and the data-collection dates.
-MODEL = "gpt-4o"
+MODEL = "gpt-6-sol"
 
 # -- Design -----------------------------------------------------------------------
 N_CONDITIONS = 4   # full 2 (framing) x 2 (motivation) factorial
